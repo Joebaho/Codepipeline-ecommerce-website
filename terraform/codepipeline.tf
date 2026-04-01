@@ -190,7 +190,8 @@ resource "aws_codepipeline" "app" {
       input_artifacts = ["source_output", "build_output"]
 
       configuration = {
-        ProjectName = aws_codebuild_project.deploy.name
+        ProjectName   = aws_codebuild_project.deploy.name
+        PrimarySource = "source_output"
       }
     }
   }
