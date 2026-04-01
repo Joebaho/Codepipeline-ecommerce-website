@@ -4,10 +4,11 @@ phases:
   build:
     commands:
       - set -eu
-      - test -f image-detail.json
+      - IMAGE_DETAIL_FILE="${CODEBUILD_SRC_DIR_build_output}/image-detail.json"
+      - test -f "${IMAGE_DETAIL_FILE}"
       - |
-        for service in $(jq -r 'keys[]' image-detail.json); do
-          image_uri="$(jq -r --arg service "${service}" '.[$service]' image-detail.json)"
+        for service in $(jq -r 'keys[]' "${IMAGE_DETAIL_FILE}"); do
+          image_uri="$(jq -r --arg service "${service}" '.[$service]' "${IMAGE_DETAIL_FILE}")"
           family="${PROJECT_NAME}-${service}"
           ecs_service="${PROJECT_NAME}-${service}"
 
