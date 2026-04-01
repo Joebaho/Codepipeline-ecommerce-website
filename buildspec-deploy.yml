@@ -3,7 +3,7 @@ version: 0.2
 phases:
   build:
     commands:
-      - set -euo pipefail
+      - set -eu
       - test -f image-detail.json
       - |
         for service in $(jq -r 'keys[]' image-detail.json); do

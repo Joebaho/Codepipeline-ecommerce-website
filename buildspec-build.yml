@@ -3,7 +3,7 @@ version: 0.2
 phases:
   pre_build:
     commands:
-      - set -euo pipefail
+      - set -eu
       - AWS_ACCOUNT_ID="$(aws sts get-caller-identity --query Account --output text)"
       - ECR_REGISTRY="${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_DEFAULT_REGION}.amazonaws.com"
       - IMAGE_TAG="$(echo "${CODEBUILD_RESOLVED_SOURCE_VERSION:-manual}" | cut -c1-7)"
@@ -11,7 +11,7 @@ phases:
       - git clone --depth 1 --branch "${MICROSERVICES_REF}" "${MICROSERVICES_REPO}" microservices-demo
   build:
     commands:
-      - set -euo pipefail
+      - set -eu
       - |
         SERVICES="adservice cartservice checkoutservice currencyservice emailservice frontend loadgenerator paymentservice productcatalogservice recommendationservice shippingservice"
 
@@ -33,7 +33,7 @@ phases:
         done
   post_build:
     commands:
-      - set -euo pipefail
+      - set -eu
       - |
         SERVICES="adservice cartservice checkoutservice currencyservice emailservice frontend loadgenerator paymentservice productcatalogservice recommendationservice shippingservice"
         {
