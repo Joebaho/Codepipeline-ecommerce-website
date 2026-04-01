@@ -1,0 +1,55 @@
+version: 0.2
+
+phases:
+  build:
+    commands:
+      - set -euo pipefail
+      - test -f image-detail.json
+      - |
+        for service in $(jq -r 'keys[]' image-detail.json); do
+          image_uri="$(jq -r --arg service "${service}" '.[$service]' image-detail.json)"
+          family="${PROJECT_NAME}-${service}"
+          ecs_service="${PROJECT_NAME}-${service}"
+
+          echo "Deploying ${service} with ${image_uri}"
+
+          aws ecs describe-task-definition \
+            --task-definition "${family}" \
+            --query 'taskDefinition' \
+            --output json > current-task-definition.json
+
+          jq \
+            --arg service "${service}" \
+            --arg image "${image_uri}" \
+            '{
+              family,
+              taskRoleArn,
+              executionRoleArn,
+              networkMode,
+              containerDefinitions,
+              volumes,
+              placementConstraints,
+              requiresCompatibilities,
+              cpu,
+              memory,
+              runtimePlatform
+            }
+            | .containerDefinitions |= map(if .name == $service then .image = $image else . end)
+            | with_entries(select(.value != null))' \
+            current-task-definition.json > next-task-definition.json
+
+          new_task_definition_arn="$(aws ecs register-task-definition \
+            --cli-input-json file://next-task-definition.json \
+            --query 'taskDefinition.taskDefinitionArn' \
+            --output text)"
+
+          aws ecs update-service \
+            --cluster "${ECS_CLUSTER}" \
+            --service "${ecs_service}" \
+            --task-definition "${new_task_definition_arn}" \
+            --force-new-deployment > /dev/null
+
+          aws ecs wait services-stable \
+            --cluster "${ECS_CLUSTER}" \
+            --services "${ecs_service}"
+        done

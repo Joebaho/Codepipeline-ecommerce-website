@@ -1,0 +1,56 @@
+version: 0.2
+
+phases:
+  pre_build:
+    commands:
+      - set -euo pipefail
+      - AWS_ACCOUNT_ID="$(aws sts get-caller-identity --query Account --output text)"
+      - ECR_REGISTRY="${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_DEFAULT_REGION}.amazonaws.com"
+      - IMAGE_TAG="$(echo "${CODEBUILD_RESOLVED_SOURCE_VERSION:-manual}" | cut -c1-7)"
+      - aws ecr get-login-password --region "${AWS_DEFAULT_REGION}" | docker login --username AWS --password-stdin "${ECR_REGISTRY}"
+      - git clone --depth 1 --branch "${MICROSERVICES_REF}" "${MICROSERVICES_REPO}" microservices-demo
+  build:
+    commands:
+      - set -euo pipefail
+      - |
+        SERVICES="adservice cartservice checkoutservice currencyservice emailservice frontend loadgenerator paymentservice productcatalogservice recommendationservice shippingservice"
+
+        get_context() {
+          case "$1" in
+            cartservice) echo "src/cartservice/src" ;;
+            *) echo "src/$1" ;;
+          esac
+        }
+
+        for service in ${SERVICES}; do
+          context="$(get_context "${service}")"
+          repository="${ECR_REGISTRY}/${PROJECT_NAME}/${service}"
+          echo "Building ${service} from ${context}"
+          docker build -t "${repository}:${IMAGE_TAG}" "microservices-demo/${context}"
+          docker tag "${repository}:${IMAGE_TAG}" "${repository}:latest"
+          docker push "${repository}:${IMAGE_TAG}"
+          docker push "${repository}:latest"
+        done
+  post_build:
+    commands:
+      - set -euo pipefail
+      - |
+        SERVICES="adservice cartservice checkoutservice currencyservice emailservice frontend loadgenerator paymentservice productcatalogservice recommendationservice shippingservice"
+        {
+          echo "{"
+          index=0
+          total=$(echo "${SERVICES}" | wc -w | tr -d ' ')
+          for service in ${SERVICES}; do
+            index=$((index + 1))
+            comma=","
+            if [ "${index}" -eq "${total}" ]; then
+              comma=""
+            fi
+            printf '  "%s": "%s/%s/%s:%s"%s\n' "${service}" "${ECR_REGISTRY}" "${PROJECT_NAME}" "${service}" "${IMAGE_TAG}" "${comma}"
+          done
+          echo "}"
+        } > image-detail.json
+
+artifacts:
+  files:
+    - image-detail.json
