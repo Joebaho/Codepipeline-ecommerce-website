@@ -2,6 +2,7 @@ project_name                  = "online-boutique"
 github_full_repository_id     = "Joebaho/Codepipeline-ecommerce-website"
 github_branch                 = "main"
 codestar_connection_name      = "online-boutique-github"
+dockerhub_secret_name         = "Dockerhub-creds"
 microservices_repo            = "https://github.com/GoogleCloudPlatform/microservices-demo.git"
 microservices_ref             = "v0.6.0"
 frontend_desired_count        = 2

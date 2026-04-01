@@ -7,6 +7,7 @@ phases:
       - AWS_ACCOUNT_ID="$(aws sts get-caller-identity --query Account --output text)"
       - ECR_REGISTRY="${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_DEFAULT_REGION}.amazonaws.com"
       - IMAGE_TAG="$(echo "${CODEBUILD_RESOLVED_SOURCE_VERSION:-manual}" | cut -c1-7)"
+      - echo "${DOCKERHUB_PASSWORD}" | docker login --username "${DOCKERHUB_USERNAME}" --password-stdin
       - aws ecr get-login-password --region "${AWS_DEFAULT_REGION}" | docker login --username AWS --password-stdin "${ECR_REGISTRY}"
       - git clone --depth 1 --branch "${MICROSERVICES_REF}" "${MICROSERVICES_REPO}" microservices-demo
   build:
@@ -26,10 +27,10 @@ phases:
           context="$(get_context "${service}")"
           repository="${ECR_REGISTRY}/${PROJECT_NAME}/${service}"
           echo "Building ${service} from ${context}"
-          docker build -t "${repository}:${IMAGE_TAG}" "microservices-demo/${context}"
-          docker tag "${repository}:${IMAGE_TAG}" "${repository}:latest"
-          docker push "${repository}:${IMAGE_TAG}"
-          docker push "${repository}:latest"
+          docker build -t "${repository}:${IMAGE_TAG}" "microservices-demo/${context}" || exit 1
+          docker tag "${repository}:${IMAGE_TAG}" "${repository}:latest" || exit 1
+          docker push "${repository}:${IMAGE_TAG}" || exit 1
+          docker push "${repository}:latest" || exit 1
         done
   post_build:
     commands:

@@ -33,6 +33,12 @@ variable "codestar_connection_name" {
   default     = "online-boutique-github"
 }
 
+variable "dockerhub_secret_name" {
+  description = "Secrets Manager secret that stores Docker Hub credentials as JSON keys Dockerhub-username and Dockerhub-password."
+  type        = string
+  default     = "Dockerhub-creds"
+}
+
 variable "microservices_repo" {
   description = "Upstream microservices-demo repository cloned by CodeBuild."
   type        = string

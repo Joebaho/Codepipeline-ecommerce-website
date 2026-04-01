@@ -62,6 +62,18 @@ resource "aws_codebuild_project" "images" {
       name  = "PROJECT_NAME"
       value = var.project_name
     }
+
+    environment_variable {
+      name  = "DOCKERHUB_USERNAME"
+      type  = "SECRETS_MANAGER"
+      value = "${var.dockerhub_secret_name}:Dockerhub-username"
+    }
+
+    environment_variable {
+      name  = "DOCKERHUB_PASSWORD"
+      type  = "SECRETS_MANAGER"
+      value = "${var.dockerhub_secret_name}:Dockerhub-password"
+    }
   }
 
   logs_config {

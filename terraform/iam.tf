@@ -83,6 +83,14 @@ resource "aws_iam_role_policy" "codebuild" {
         Resource = "*"
       },
       {
+        Sid    = "ReadDockerHubSecret"
+        Effect = "Allow"
+        Action = [
+          "secretsmanager:GetSecretValue"
+        ]
+        Resource = "arn:aws:secretsmanager:${var.aws_region}:${data.aws_caller_identity.current.account_id}:secret:${var.dockerhub_secret_name}*"
+      },
+      {
         Sid    = "EcsDeploy"
         Effect = "Allow"
         Action = [
